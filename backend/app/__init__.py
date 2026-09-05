@@ -1,1 +1,1 @@
-"""TruthLens FastAPI service."""
+"""ThelivLens FastAPI service."""

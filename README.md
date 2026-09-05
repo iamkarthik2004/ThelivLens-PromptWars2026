@@ -1,8 +1,8 @@
-# TruthLens — AI Media Verification Platform
+# ThelivLens — AI Media Verification Platform
 
 ## Overview
 
-TruthLens is an AI-assisted media-verification platform. It helps people inspect suspicious images, video, and audio before trusting or sharing it. Its guiding principle is simple: **Detect. Explain. Verify.**
+ThelivLens is an AI-assisted media-verification platform. It helps people inspect suspicious images, video, and audio before trusting or sharing it. Its guiding principle is simple: **Detect. Explain. Verify.**
 
 ## Problem Statement
 
@@ -10,7 +10,7 @@ AI-generated and manipulated media is increasingly easy to create and difficult 
 
 ## Solution
 
-TruthLens combines mock media-forensics signals, explainable evidence cards, a source-tracing view, and a conversational Verification Copilot. The UI deliberately communicates uncertainty: results are probabilistic assessments and prompts users to corroborate important claims.
+ThelivLens combines mock media-forensics signals, explainable evidence cards, a source-tracing view, and a conversational Verification Copilot. The UI deliberately communicates uncertainty: results are probabilistic assessments and prompts users to corroborate important claims.
 
 ## Key Features
 
@@ -121,4 +121,4 @@ Create a Railway service with `backend` configured as its root directory. Railwa
 
 ## Disclaimer
 
-AI-media detection is probabilistic. A high confidence score is not absolute proof that content is manipulated, and a low score is not proof of authenticity. Use TruthLens as one part of a broader verification process, especially for consequential claims.
+AI-media detection is probabilistic. A high confidence score is not absolute proof that content is manipulated, and a low score is not proof of authenticity. Use ThelivLens as one part of a broader verification process, especially for consequential claims.

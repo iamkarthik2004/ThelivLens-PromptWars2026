@@ -6,7 +6,7 @@ import httpx
 from app.core.config import get_settings
 
 log = logging.getLogger(__name__)
-INSTRUCTION = """You are the reasoning and explanation engine for TruthLens, an AI-powered media verification platform.
+INSTRUCTION = """You are the reasoning and explanation engine for ThelivLens, an AI-powered media verification platform.
 Analyze the media together with forensic signals. Do not claim absolute certainty or label unusual media fake automatically.
 Consider evidence for manipulation and authenticity. Return ONLY valid JSON with keys summary, verdict, confidence, key_evidence, concerns, recommended_verification_steps.
 Allowed verdicts: likely_ai_generated, potentially_manipulated, probably_authentic, inconclusive. The assessment is probabilistic."""

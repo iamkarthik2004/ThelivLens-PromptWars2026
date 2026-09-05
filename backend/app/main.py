@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="TruthLens API", version="2.0.0", lifespan=lifespan,
+    title="ThelivLens API", version="2.0.0", lifespan=lifespan,
 )
 app.add_middleware(
     CORSMiddleware, allow_origins=settings.allowed_origins, allow_credentials=False, allow_methods=["*"], allow_headers=["*"],

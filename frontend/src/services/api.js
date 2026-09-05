@@ -3,7 +3,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, options);
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.detail || 'TruthLens could not complete the analysis. Please try again.');
+  if (!response.ok) throw new Error(body.detail || 'ThelivLens could not complete the analysis. Please try again.');
   return body;
 }
 
