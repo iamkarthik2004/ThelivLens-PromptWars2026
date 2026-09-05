@@ -15,42 +15,42 @@ export default function ResultsView({ media = {} }) {
   const sourceEvents = media.source_trace || report?.source_events || [];
 
   return (
-    <main className="results-page container">
+    <main className="results-page container" role="main">
       <div className="result-title">
         <div>
           <span className="eyebrow">ANALYSIS REPORT</span>
           <h1>Analysis result</h1>
           <p>{media.name} · Completed just now</p>
         </div>
-        <button className="btn btn-outline"><Icons.Download size={17}/> Export report</button>
+        <button className="btn btn-outline" aria-label="Export analysis report"><Icons.Download size={17} aria-hidden="true"/> Export report</button>
       </div>
 
-      <section className="verdict-overview">
+      <section className="verdict-overview" aria-label="Verdict summary">
         <div className="result-media">
           <MediaArtwork/>
           {audio && <Waveform/>}
         </div>
         <div className="verdict-content">
-          <span className="status-label warning">
-            <Icons.TriangleAlert size={15}/> {report?.verdict || 'Analyzing...'}
+          <span className="status-label warning" role="status">
+            <Icons.TriangleAlert size={15} aria-hidden="true"/> {report?.verdict || 'Analyzing...'}
           </span>
           <h2>Multiple signals deserve a closer look.</h2>
           <p>{report?.disclaimer || 'Analysis results will appear here once processing is complete.'}</p>
-          <div className="confidence-list">
+          <div className="confidence-list" role="list" aria-label="Confidence metrics">
             {[
               ['AI Generated', metrics.ai_generated, 'cyan'],
               ['Manipulated', metrics.manipulated, 'purple'],
               ['Authentic', metrics.authentic, 'muted']
             ].map(([label, value, tone]) => (
-              <div key={label}>
+              <div key={label} role="listitem">
                 <span>{label}<b>{value}%</b></span>
-                <i className={tone}><em style={{width: `${value}%`}}/></i>
+                <i className={tone} aria-hidden="true"><em style={{width: `${value}%`}}/></i>
               </div>
             ))}
           </div>
         </div>
-        <div className="confidence-ring">
-          <svg viewBox="0 0 120 120">
+        <div className="confidence-ring" role="img" aria-label={`Overall confidence: ${confidence}%`}>
+          <svg viewBox="0 0 120 120" aria-hidden="true">
             <circle cx="60" cy="60" r="50"/>
             <circle className="ring-value" cx="60" cy="60" r="50" pathLength="100" style={{strokeDasharray: `${confidence} 100`}}/>
           </svg>
@@ -58,17 +58,19 @@ export default function ResultsView({ media = {} }) {
         </div>
       </section>
 
-      <div className="tabs" role="tablist">
+      <div className="tabs" role="tablist" aria-label="Analysis report tabs">
         {tabs.map(t => (
-          <button className={tab === t ? 'active' : ''} key={t} onClick={() => setTab(t)} role="tab">{t}</button>
+          <button className={tab === t ? 'active' : ''} key={t} onClick={() => setTab(t)} role="tab" aria-selected={tab === t} aria-controls={`panel-${t.replace(/\s/g, '-').toLowerCase()}`}>{t}</button>
         ))}
       </div>
 
-      {tab === 'Overview' && <Overview evidenceItems={evidenceItems} metrics={metrics} confidence={confidence} verdict={report?.verdict}/>}
-      {tab === 'Visual Forensics' && <Forensics video={video} evidenceItems={evidenceItems}/>}
-      {tab === 'Metadata' && <Metadata metadata={media.metadata}/>}
-      {tab === 'AI Signals' && <Signals evidenceItems={evidenceItems} metrics={metrics}/>}
-      {tab === 'Source Trace' && <SourceTrace events={sourceEvents}/>}
+      <div role="tabpanel" id={`panel-${tab.replace(/\s/g, '-').toLowerCase()}`} aria-label={`${tab} panel`}>
+        {tab === 'Overview' && <Overview evidenceItems={evidenceItems} metrics={metrics} confidence={confidence} verdict={report?.verdict}/>}
+        {tab === 'Visual Forensics' && <Forensics video={video} evidenceItems={evidenceItems}/>}
+        {tab === 'Metadata' && <Metadata metadata={media.metadata}/>}
+        {tab === 'AI Signals' && <Signals evidenceItems={evidenceItems} metrics={metrics}/>}
+        {tab === 'Source Trace' && <SourceTrace events={sourceEvents}/>}
+      </div>
     </main>
   );
 }
@@ -86,21 +88,21 @@ function Overview({ evidenceItems, metrics, confidence, verdict }) {
         <h2>Why we think this</h2>
         <p>Independent signals make the assessment transparent and reviewable.</p>
       </section>
-      <div className="evidence-grid">
+      <div className="evidence-grid" role="list" aria-label="Evidence signals">
         {items.map(item => {
           const I = Icons[item.icon] || Icons.Search;
           return (
-            <article className="evidence-card" key={item.title}>
-              <span className="evidence-icon"><I size={20}/></span>
+            <article className="evidence-card" key={item.title} role="listitem">
+              <span className="evidence-icon" aria-hidden="true"><I size={20}/></span>
               <div className="evidence-head">
                 <h3>{item.title}</h3>
                 <span className={`severity ${item.severity.toLowerCase()}`}>{item.severity}</span>
               </div>
               <p>{item.text}</p>
-              <div className="evidence-confidence">
+              <div className="evidence-confidence" aria-label={`Signal confidence: ${item.confidence}%`}>
                 <span>Signal confidence</span>
                 <b>{item.confidence}%</b>
-                <i><em style={{width: `${item.confidence}%`}}/></i>
+                <i aria-hidden="true"><em style={{width: `${item.confidence}%`}}/></i>
               </div>
             </article>
           );
@@ -114,7 +116,7 @@ function Overview({ evidenceItems, metrics, confidence, verdict }) {
 
 function Forensics({ video, evidenceItems }) {
   return (
-    <section className="forensic-panel">
+    <section className="forensic-panel" aria-label="Visual forensics">
       <div className="forensic-preview">
         <MediaArtwork/>
         <span className="face-box one">Face: 94%</span>
@@ -124,7 +126,7 @@ function Forensics({ video, evidenceItems }) {
         <span className="eyebrow">VISUAL FORENSICS</span>
         <h2>Artifact map</h2>
         <p>Highlighted zones mark regions with irregular texture and blending patterns.</p>
-        <ul className="forensic-list">
+        <ul className="forensic-list" aria-label="Detected artifacts">
           {(evidenceItems || []).slice(0, 3).map((item, i) => (
             <li key={i}><b>{String(i + 1).padStart(2, '0')}</b> {item.title}</li>
           ))}
@@ -138,12 +140,12 @@ function Forensics({ video, evidenceItems }) {
         </ul>
       </div>
       {video && (
-        <div className="video-timeline">
+        <div className="video-timeline" aria-label="Video frame analysis timeline">
           <h3>Frame analysis</h3>
-          <div className="timeline-line">
+          <div className="timeline-line" role="list">
             {['00:04','00:08','00:12','00:16','00:20'].map((time, i) => (
-              <button key={time} className={i === 2 || i === 4 ? 'clean' : 'flagged'}>
-                {time}<span>{i === 2 || i === 4 ? '✓' : '⚠'}</span>
+              <button key={time} className={i === 2 || i === 4 ? 'clean' : 'flagged'} role="listitem" aria-label={`Frame at ${time}: ${i === 2 || i === 4 ? 'Clean' : 'Flagged'}`}>
+                {time}<span aria-hidden="true">{i === 2 || i === 4 ? '✓' : '⚠'}</span>
               </button>
             ))}
           </div>
@@ -160,8 +162,8 @@ function Metadata({ metadata }) {
   const software = exif.Software || exif[305] || 'Not available';
 
   return (
-    <section className="metadata-card">
-      <Icons.FileSearch/>
+    <section className="metadata-card" aria-label="Metadata analysis">
+      <Icons.FileSearch aria-hidden="true"/>
       <div>
         <span className="eyebrow">METADATA INSPECTION</span>
         <h2>Metadata analysis</h2>
@@ -185,25 +187,25 @@ function Metadata({ metadata }) {
 
 function Signals({ evidenceItems, metrics }) {
   return (
-    <section className="signal-grid">
+    <section className="signal-grid" aria-label="AI signal analysis">
       <div>
-        <Icons.BrainCircuit/>
+        <Icons.BrainCircuit aria-hidden="true"/>
         <h2>Model consensus</h2>
         <p>{evidenceItems.length} independent signals were analyzed for this media.</p>
       </div>
-      <div className="signal-bars">
+      <div className="signal-bars" role="list" aria-label="Signal confidence bars">
         {evidenceItems.map((item, i) => (
-          <span key={item.title}>
+          <span key={item.title} role="listitem">
             {item.title}
-            <i><em style={{width: `${item.confidence}%`}}/></i>
+            <i aria-hidden="true"><em style={{width: `${item.confidence}%`}}/></i>
           </span>
         ))}
         {evidenceItems.length === 0 && (
           <>
-            <span>Texture consistency<i><em style={{width: '92%'}}/></i></span>
-            <span>Reflectance cues<i><em style={{width: '81%'}}/></i></span>
-            <span>Noise distribution<i><em style={{width: '70%'}}/></i></span>
-            <span>Semantic coherence<i><em style={{width: '59%'}}/></i></span>
+            <span role="listitem">Texture consistency<i aria-hidden="true"><em style={{width: '92%'}}/></i></span>
+            <span role="listitem">Reflectance cues<i aria-hidden="true"><em style={{width: '81%'}}/></i></span>
+            <span role="listitem">Noise distribution<i aria-hidden="true"><em style={{width: '70%'}}/></i></span>
+            <span role="listitem">Semantic coherence<i aria-hidden="true"><em style={{width: '59%'}}/></i></span>
           </>
         )}
       </div>
@@ -213,21 +215,21 @@ function Signals({ evidenceItems, metrics }) {
 
 export function SourceTrace({ events = [] }) {
   return (
-    <section className="source-section">
+    <section className="source-section" aria-label="Source trace analysis">
       <div className="section-heading left">
         <span className="eyebrow">SOURCETRACE</span>
         <h2>Where did this content come from?</h2>
         <p>Track how this media moved and changed across the web.</p>
       </div>
       <div className="trace-layout">
-        <div className="source-timeline">
+        <div className="source-timeline" role="list" aria-label="Source timeline">
           {events.map((e, i) => (
-            <article key={e.source + i}>
+            <article key={e.source + i} role="listitem">
               <span className={`timeline-dot ${(e.status || 'unverified').toLowerCase()}`}>{i + 1}</span>
               <time>{e.date}</time>
               <h3>{e.source} <small>{e.platform}</small></h3>
               <p>{e.caption}</p>
-              <a href="#trace">View archived URL ↗</a>
+              <a href="#trace" aria-label={`View archived URL for ${e.source}`}>View archived URL ↗</a>
             </article>
           ))}
           {events.length === 0 && (
@@ -239,7 +241,7 @@ export function SourceTrace({ events = [] }) {
             </article>
           )}
         </div>
-        <aside className="source-summary">
+        <aside className="source-summary" aria-label="Source summary">
           <div>
             <small>Earliest Known Source</small>
             <b>{events[0]?.source || 'Unknown / Unverified'}</b>
@@ -267,7 +269,7 @@ function EvidenceTable({ evidenceItems }) {
   ]);
 
   return (
-    <section className="table-section">
+    <section className="table-section" aria-label="Evidence summary table">
       <div className="section-heading left">
         <span className="eyebrow">EVIDENCE SUMMARY</span>
         <h2>Signals at a glance</h2>
@@ -275,13 +277,13 @@ function EvidenceTable({ evidenceItems }) {
       <div className="table-wrap">
         <table>
           <thead>
-            <tr><th>Signal</th><th>Result</th><th>Confidence</th><th>Status</th></tr>
+            <tr><th scope="col">Signal</th><th scope="col">Result</th><th scope="col">Confidence</th><th scope="col">Status</th></tr>
           </thead>
           <tbody>
             {rows.map(r => (
               <tr key={r[0]}>
                 {r.map((c, i) => (
-                  <td key={c}>{i === 3 ? <span className={`status-label ${c === 'High' ? 'warning' : c === 'Medium' ? 'neutral' : 'success'}`}>{c}</span> : c}</td>
+                  <td key={i}>{i === 3 ? <span className={`status-label ${c === 'High' ? 'warning' : c === 'Medium' ? 'neutral' : 'success'}`}>{c}</span> : c}</td>
                 ))}
               </tr>
             ))}
@@ -298,9 +300,9 @@ function EvidenceTable({ evidenceItems }) {
 function FinalVerdict({ confidence, verdict }) {
   const displayVerdict = verdict ? verdict.replace(/_/g, ' ').toUpperCase() : 'ANALYSIS PENDING';
   return (
-    <section className="final-verdict">
-      <span className="status-label warning">
-        <Icons.TriangleAlert size={15}/> {displayVerdict}
+    <section className="final-verdict" aria-label="Final verdict">
+      <span className="status-label warning" role="status">
+        <Icons.TriangleAlert size={15} aria-hidden="true"/> {displayVerdict}
       </span>
       <h2>Overall confidence: <strong>{confidence}%</strong></h2>
       <p>This assessment is based on multiple independent signals. These signals increase the likelihood of manipulation, but they do not by themselves prove that the content is falsified.</p>
