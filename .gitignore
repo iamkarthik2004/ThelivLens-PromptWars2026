@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+uploads/
+backend/uploads/
+.pytest_cache/
+__pycache__/
+*.py[cod]
