@@ -19,10 +19,78 @@ ALLOWED = {"image/jpeg":"image","image/png":"image","image/webp":"image","video/
 def response(r):
     m=r["report"]["metrics"]; return {**r,"id":r["analysis_id"],"name":r["filename"],"type":r["content_type"],"media_kind":r["media_type"],"overall_verdict":r["overall_verdict"],"confidence":r["confidence"],"ai_probability":m["ai_generated"],"manipulation_probability":m["manipulated"],"authentic_probability":m["authentic"],"evidence_data":r["report"]["evidence"]}
 async def create(request, filename, ctype, data):
-    kind=ALLOWED[ctype]; digest=hashlib.sha256(data).hexdigest(); path=await LocalObjectStorage().put(filename,data,ctype); metadata=await extract_metadata(path,kind); forensic=detect_media(path,kind,metadata); explanation=await analyze_with_vision(path,forensic); score=forensic["ai_probability"]
-    verdict=(explanation or {}).get("verdict") or ("likely_ai_generated" if score>=75 else "potentially_manipulated" if score>=55 else "inconclusive"); confidence=int((explanation or {}).get("confidence",score)); evidence=[{"title":s["name"],"description":s["description"],"severity":"High" if s.get("confidence",0)>=75 else "Medium" if s.get("confidence",0)>=50 else "Low","confidence":s.get("confidence",35),"icon":"Search"} for s in forensic["signals"]]; trace=source_trace_from_metadata(metadata)
-    report={"verdict":verdict.replace("_"," ").title(),"confidence":confidence,"metrics":{"ai_generated":forensic["ai_probability"],"manipulated":forensic["manipulation_probability"],"authentic":forensic["authentic_probability"]},"evidence":evidence,"source_events":trace,"disclaimer":"AI analysis is probabilistic and is not definitive proof of authenticity or manipulation.","ai_explanation":explanation or {"summary":"Local forensic signals returned; Hugging Face reasoning was unavailable.","key_evidence":[],"concerns":[],"recommended_verification_steps":["Verify the earliest source and original file."]}}
-    return await request.app.state.repository.create({"analysis_id":str(uuid4()),"filename":filename,"content_type":ctype,"media_type":kind,"file_hash":digest,"status":"completed","overall_verdict":verdict,"confidence":confidence,"metadata":metadata,"report":report,"source_trace":trace,"created_at":datetime.now(timezone.utc),"object_key":path})
+    kind=ALLOWED[ctype]
+    digest=hashlib.sha256(data).hexdigest()
+    path=await LocalObjectStorage().put(filename,data,ctype)
+    metadata=await extract_metadata(path,kind)
+
+    # Step 1: Run local forensic analysis
+    forensic=detect_media(path,kind,metadata)
+    log.info("Local detector: ai=%d, manipulation=%d, authentic=%d", forensic["ai_probability"], forensic["manipulation_probability"], forensic["authentic_probability"])
+
+    # Step 2: Call HuggingFace vision model for AI-powered assessment
+    explanation=await analyze_with_vision(path,forensic)
+
+    # Step 3: Determine final verdict - HuggingFace takes priority when available
+    if explanation and "verdict" in explanation:
+        verdict = explanation["verdict"]
+        confidence = int(explanation.get("confidence", forensic["ai_probability"]))
+        log.info("Using HuggingFace verdict: %s (confidence: %d)", verdict, confidence)
+        # Build evidence from HuggingFace key_evidence if available
+        hf_evidence = explanation.get("key_evidence", [])
+        if hf_evidence and isinstance(hf_evidence, list):
+            evidence = [{"title": e.get("title", e) if isinstance(e, dict) else str(e),
+                        "description": e.get("description", "") if isinstance(e, dict) else "",
+                        "severity": "High" if confidence >= 70 else "Medium" if confidence >= 45 else "Low",
+                        "confidence": int(e.get("confidence", confidence)) if isinstance(e, dict) else confidence,
+                        "icon": "Search"} for e in hf_evidence[:6]]
+        else:
+            # Use local signals as evidence
+            evidence = [{"title":s["name"],"description":s["description"],
+                        "severity":"High" if s.get("confidence",0)>=70 else "Medium" if s.get("confidence",0)>=45 else "Low",
+                        "confidence":s.get("confidence",35),"icon":"Search"} for s in forensic["signals"]]
+        # Use HF confidence for metrics
+        ai_prob = confidence if "ai" in verdict else max(10, 100 - confidence)
+        manip_prob = int(ai_prob * 0.6) if "manipulated" in verdict else int(ai_prob * 0.3)
+        auth_prob = max(0, 100 - ai_prob)
+    else:
+        # Fallback to local detector when HuggingFace is unavailable
+        log.warning("HuggingFace unavailable - using local detector scores")
+        score = forensic["ai_probability"]
+        verdict = "likely_ai_generated" if score >= 70 else "potentially_manipulated" if score >= 45 else "probably_authentic" if score >= 30 else "inconclusive"
+        confidence = score
+        evidence = [{"title":s["name"],"description":s["description"],
+                    "severity":"High" if s.get("confidence",0)>=70 else "Medium" if s.get("confidence",0)>=45 else "Low",
+                    "confidence":s.get("confidence",35),"icon":"Search"} for s in forensic["signals"]]
+        ai_prob = forensic["ai_probability"]
+        manip_prob = forensic["manipulation_probability"]
+        auth_prob = forensic["authentic_probability"]
+
+    trace=source_trace_from_metadata(metadata)
+    report={
+        "verdict":verdict.replace("_"," ").title(),
+        "confidence":confidence,
+        "metrics":{"ai_generated":ai_prob,"manipulated":manip_prob,"authentic":auth_prob},
+        "evidence":evidence,
+        "source_events":trace,
+        "disclaimer":"AI analysis is probabilistic and is not definitive proof of authenticity or manipulation.",
+        "ai_explanation":explanation or {"summary":"Local forensic signals returned; Hugging Face reasoning was unavailable.","key_evidence":[],"concerns":[],"recommended_verification_steps":["Verify the earliest source and original file."]}
+    }
+    return await request.app.state.repository.create({
+        "analysis_id":str(uuid4()),
+        "filename":filename,
+        "content_type":ctype,
+        "media_type":kind,
+        "file_hash":digest,
+        "status":"completed",
+        "overall_verdict":verdict,
+        "confidence":confidence,
+        "metadata":metadata,
+        "report":report,
+        "source_trace":trace,
+        "created_at":datetime.now(timezone.utc),
+        "object_key":path
+    })
 @router.post("/upload",response_model=AnalysisResponse,status_code=201)
 async def upload(request:Request,file:UploadFile=File(...)):
     if file.content_type not in ALLOWED: raise HTTPException(422,"Unsupported media type")
